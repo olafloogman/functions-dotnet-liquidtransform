@@ -8,9 +8,9 @@ schemes:
   - https
   - http
 paths:
-  '/api/jsontransformer/{liquidtransformfilename}':
+  '/api/liquidtransformer/{liquidtransformfilename}':
     post:
-      operationId: '/api/jsontransformer/{liquidtransformfilename}/post'
+      operationId: '/api/liquidtransformer/{liquidtransformfilename}/post'
       consumes:
       - "application/json"
       produces:

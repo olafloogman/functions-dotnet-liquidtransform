@@ -8,9 +8,9 @@ schemes:
   - https
   - http
 paths:
-  '/api/liquidtransformer/{liquidtransformfilename}':
+  '/api/liquidtransformer/{LiquidTransformFilename}':
     post:
-      operationId: '/api/liquidtransformer/{liquidtransformfilename}/post'
+      operationId: '/api/liquidtransformer/{LiquidTransformFilename}/post'
       consumes:
       - "application/json"
       produces:
@@ -19,16 +19,20 @@ paths:
       - "text/plain"
       parameters:
         - in: path
-          name: liquidtransformfilename
+          name: LiquidTransformFilename
           required: true
           type: string
         - in: body
-          name: content
+          name: Content
           required: true
           schema:
             type: object
-        - name: Accept
-          in: header
+        - in: header
+          name: Accept
+          required: true
+          type: string
+        - in: header
+          name: Content-Type
           required: true
           type: string
       responses:

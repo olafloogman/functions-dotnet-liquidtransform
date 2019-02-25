@@ -1,10 +1,12 @@
 # functions-dotnet-liquidtransform
 
-An Azure Function (v1) executing Liquid transforms using DotLiquid. Currently only transformations from JSON are supported. Support for XML transformations will be added in a future release. In the meantime XML is only supported as output format. In summary the following transformation types are supported:
+An Azure Function (v1) executing Liquid transforms using DotLiquid. In summary the following transformation types are supported:
 - JSON to JSON
 - JSON to XML
 - JSON to plain text
-
+- XML to JSON
+- XML to XML
+- XML to plain text
 
 The actual Liquid transforms should be stored in an Azure storage account. The Liquid transform uses the HTTP request body as input.
 
@@ -16,16 +18,28 @@ The actual Liquid transforms should be stored in an Azure storage account. The L
 
 ### Usage
 
-Post a JSON payload to the URL where your function app is hosted, e.g.:
+Post a JSON or XML payload to the URL where your function app is hosted, e.g.:
 
 ```http
-https://liquidtransformfunctionappv1291962835504.azurewebsites.net/api/jsontransformer/sample.liquid?code=1tQ/TjrC0Fu7F/Ca585ArMV45mO53x/gaBG2aPbuNiID7wODytSVoB==
+POST /api/liquidtransformer/xmlsample.liquid HTTP/1.1
+Host: localhost:7071
+Content-Type: application/json
+Accept: application/xml
+{
+	"name": "olaf"
+}
+
 ```
 
 Note how the name of the Liquid transform as stored in the storage account is part of the URL path. This allows for a function binding to the blob.
 
-The sample.liquid transformation should be stored in the associated Azure storage account (used for AzureWebJobsStorage) in the blob container liquid-transforms.
+The Liquid transformation should be stored in the Azure storage account associated with the Azure function (used for AzureWebJobsStorage) in a blob container named liquid-transforms.
 
+The transformation input type has to be specified with the HTTP Content-Type header. This can either be application/json or application/xml.
+
+The transformation output type has to be specified with the HTTP Accept header. Examples could be application/json, application/XML or text/CSV.
+
+#### JSON transformation
 Let's take the following JSON input:
 ```json
 {
@@ -35,13 +49,13 @@ Let's take the following JSON input:
 With the following Liquid transform:
 ```
 {
-    "fullName": "{{content.name}}"
+    "fullName": "{{content.name | upcase }}"
 }
 ```
 This will produce a JSON payload with the following output:
 ```json
 {
-	"fullName": "olaf"
+	"fullName": "OLAF"
 }
 ```
 
@@ -50,9 +64,52 @@ And with the following Liquid transform:
 <fullName>{{content.name}}</fullName>
 ```
 
-This will result in the the following output:
+This will result in the the following XML output:
 ```xml
 <fullName>olaf</fullName>
+```
+
+#### XML transformation
+Let's take the following XML input:
+
+```xml
+<root>
+    <name>olaf</name>
+    <cities>
+        <city>sydney</city>
+        <city>amsterdam</city>
+        <test>test</test>
+    </cities>
+</root>
+```
+With the following Liquid transformation:
+```
+{
+    "fullName": "{{content.root.name}}",
+    "cities": [
+    {%- for item in content.root.cities.city -%}
+        {
+            "city": "{{ item }}"
+        },
+    {%- endfor -%}
+    ],
+    "test": "{{content.root.cities.test}}"
+}
+```
+This will result in the following JSON output:
+```json
+{
+    "fullName": "olaf",
+    "cities": [
+        {
+            "city": "sydney"
+        },
+        {
+            "city": "amsterdam"
+        }
+    ],
+    "test": "test"
+}
 ```
 
 ## Deployment
@@ -68,7 +125,7 @@ Refer to [Microsoft Docs](https://docs.microsoft.com/en-us/azure/azure-functions
 
 Expose the Swagger definition if you want to consume the API in Logic Apps.  More info on how to consume Azure Functions in Logic Apps using Swagger can be found [here](https://docs.microsoft.com/en-us/azure/logic-apps/logic-apps-azure-functions). A sample Logic Apps action would look like this:
 ```json
-"apijsontransformerliquidtransformfilenamepost": {
+"apiliquidtransformerliquidtransformfilenamepost": {
 	"inputs": {
 		"body": {
 			"name": "olaf"
@@ -77,10 +134,11 @@ Expose the Swagger definition if you want to consume the API in Logic Apps.  Mor
 			"id": "/subscriptions/ab6c9011-d1be-48c1-a58b-87c12cbb3434/resourceGroups/rg-liquidtransform/providers/Microsoft.Web/sites/LiquidTransformfunctionappv12038622085504"
 		},
 		"headers": {
+			"Content-Type": "application/json",
 			"Accept": "application/json"
 		},
 		"method": "post",
-		"uri": "https://liquidTransformfunctionappv12038622085504.azurewebsites.net/api/jsontransformer/@{encodeURIComponent('sample.liquid')}"
+		"uri": "https://liquidTransformfunctionappv12038622085504.azurewebsites.net/api/liquidtransformer/@{encodeURIComponent('sample.liquid')}"
 	},
 	"runAfter": {},
 	"type": "Function"

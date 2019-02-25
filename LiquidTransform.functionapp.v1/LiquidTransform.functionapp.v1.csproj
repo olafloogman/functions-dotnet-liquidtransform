@@ -8,6 +8,9 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.24" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LiquidTransform.Extensions\LiquidTransform.Extensions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Serialization" />

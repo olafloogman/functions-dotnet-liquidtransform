@@ -14,6 +14,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Xml.Linq;
+using LiquidTransform.Extensions;
+using System.Globalization;
 
 namespace LiquidTransform.functionapp.v1
 {
@@ -51,8 +53,12 @@ namespace LiquidTransform.functionapp.v1
             string requestBody = await req.Content.ReadAsStringAsync();
             var inputHash = ParseRequest(requestBody, requestContentType);
 
+            // Register the Liquid custom filter extensions
+            Template.RegisterFilter(typeof(CustomFilters));
+
             // Execute the Liquid transform
             Template template = Template.Parse(liquidTransform);
+
             var output = template.Render(inputHash);
 
             if (responseContentType == "application/json")

@@ -16,5 +16,10 @@ namespace LiquidTransform.Extensions
         {
             return input.PadRight(totalWidth, padChar[0]);
         }
+
+        public static string Nullifnull(Context context, string input)
+        {
+            return string.IsNullOrEmpty(input) ? "null" : input;
+        }
     }
 }

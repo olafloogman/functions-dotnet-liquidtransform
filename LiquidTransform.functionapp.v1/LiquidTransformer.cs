@@ -63,12 +63,20 @@ namespace LiquidTransform.functionapp.v1
 
             if (responseContentType == "application/json")
             {
-                // This will pretty print the JSON output, and also remove redundant comma characters after arrays as a result of for loop constructs in Liquid
+                // This will pretty print the JSON output, and also remove redundant comma characters after arrays as a result of for loop 
+                // constructs in Liquid, escape strings, and nullify empty numbers
                 try
                 {
+                    JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
+                    jsonSerializerSettings.NullValueHandling = NullValueHandling.Include;
+                    jsonSerializerSettings.StringEscapeHandling = StringEscapeHandling.Default;
+
+                    var jsonObject = JsonConvert.DeserializeObject(output, jsonSerializerSettings);
+                    var jsonString = JsonConvert.SerializeObject(jsonObject, jsonSerializerSettings);
+
                     return new HttpResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = new StringContent(JObject.Parse(output).ToString(), Encoding.UTF8, responseContentType)
+                        Content = new StringContent(jsonString, Encoding.UTF8, responseContentType)
                     };
                 }
                 catch (System.Exception ex)
@@ -94,6 +102,8 @@ namespace LiquidTransform.functionapp.v1
             {
                 // Convert the JSON input to an object tree of primitive types
                 var serializer = new JavaScriptSerializer();
+                // Let's not shy away from some big JSON files
+                serializer.MaxJsonLength = Int32.MaxValue;
                 dynamic requestJson = serializer.Deserialize(requestBody, typeof(object));
 
                 // Wrap the JSON input in another content node to provide compatibility with Logic Apps Liquid transformations

@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: Liquid Transform API
   version: 1.0.0
-host: <yourfunctionurl>.azurewebsites.net
+host: yourfunctionurl.azurewebsites.net
 basePath: /
 schemes:
   - https
@@ -12,6 +12,7 @@ paths:
     post:
       operationId: '/api/liquidtransformer/{LiquidTransformFilename}/post'
       consumes:
+      - "application/xml"
       - "application/json"
       produces:
       - "application/xml"

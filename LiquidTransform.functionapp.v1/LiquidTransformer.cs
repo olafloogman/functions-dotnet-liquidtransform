@@ -11,11 +11,9 @@ using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Xml.Linq;
 using LiquidTransform.Extensions;
-using System.Globalization;
 
 namespace LiquidTransform.functionapp.v1
 {
@@ -30,7 +28,8 @@ namespace LiquidTransform.functionapp.v1
         /// <param name="log"></param>
         /// <returns></returns>
         [FunctionName("LiquidTransformer")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "post", Route = "liquidtransformer/{liquidtransformfilename}")] HttpRequestMessage req,
+        public static async Task<HttpResponseMessage> Run(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "liquidtransformer/{liquidtransformfilename}")] HttpRequestMessage req,
             [Blob("liquid-transforms/{liquidtransformfilename}", FileAccess.Read)] Stream inputBlob,
             TraceWriter log)
         {
@@ -38,7 +37,8 @@ namespace LiquidTransform.functionapp.v1
 
             if (inputBlob == null)
             {
-                throw new ArgumentNullException("Liquid transform not found");
+                log.Error("inputBlog null");
+                return req.CreateErrorResponse(HttpStatusCode.NotFound, "Liquid transform not found");
             }
 
             // This indicates the response content type. If set to application/json it will perform additional formatting
@@ -51,15 +51,64 @@ namespace LiquidTransform.functionapp.v1
             var liquidTransform = sr.ReadToEnd();
 
             string requestBody = await req.Content.ReadAsStringAsync();
-            var inputHash = ParseRequest(requestBody, requestContentType);
+
+            if (string.IsNullOrEmpty(requestBody))
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Please provide a request body");
+            }
+
+            Hash inputHash;
+
+            try
+            {
+                inputHash = ParseRequest(requestBody, requestContentType);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message, ex);
+                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error parsing request body", ex);
+            }
 
             // Register the Liquid custom filter extensions
             Template.RegisterFilter(typeof(CustomFilters));
 
             // Execute the Liquid transform
-            Template template = Template.Parse(liquidTransform);
+            Template template;
 
-            var output = template.Render(inputHash);
+            try
+            {
+                template = Template.Parse(liquidTransform);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message, ex);
+                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error parsing Liquid template", ex);
+            }
+
+            string output = string.Empty;
+
+            try
+            {
+                output = template.Render(inputHash);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message, ex);
+                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error rendering Liquid template", ex);
+            }
+
+            if (template.Errors != null && template.Errors.Count > 0)
+            {
+                if (template.Errors[0].InnerException != null)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Error rendering Liquid template: {template.Errors[0].Message}", template.Errors[0].InnerException);
+                }
+                else
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Error rendering Liquid template: {template.Errors[0].Message}");
+                }
+            }
 
             if (responseContentType == "application/json")
             {
@@ -79,7 +128,7 @@ namespace LiquidTransform.functionapp.v1
                         Content = new StringContent(jsonString, Encoding.UTF8, responseContentType)
                     };
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     // Just log the error, and return the Liquid output without JSON parsing
                     log.Error(ex.Message, ex);

@@ -57,6 +57,9 @@ namespace LiquidTransform.functionapp.v1
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Please provide a request body");
             }
 
+            //IContentReader contentReader = DependencyInjection.Resolve(typeof(IContentReader), requestContentType, context.FunctionName, context.InvocationId);
+            
+
             Hash inputHash;
 
             try

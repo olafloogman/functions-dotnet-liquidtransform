@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -15,8 +16,10 @@ namespace LiquidTransform.functionapp.v1
 
         }
 
-        public Hash ParseRequest(string requestBody)
+        public async Task<Hash> ParseRequestAsync(HttpContent content)
         {
+            string requestBody = await content.ReadAsStringAsync();
+
             var transformInput = new Dictionary<string, object>();
             var serializer = new JavaScriptSerializer();
             // Let's not shy away from some big JSON files

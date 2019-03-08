@@ -10,6 +10,6 @@ namespace LiquidTransform.functionapp.v1
 {
     public interface IContentReader
     {
-        Hash ParseRequest(string content);
+        Task<Hash> ParseRequestAsync(HttpContent content);
     }
 }

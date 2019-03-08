@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -17,11 +18,13 @@ namespace LiquidTransform.functionapp.v1
 
         }
 
-        public Hash ParseRequest(string content)
+        public async Task<Hash> ParseRequestAsync(HttpContent content)
         {
+            string requestBody = await content.ReadAsStringAsync();
+            
             var transformInput = new Dictionary<string, object>();
 
-            var xDoc = XDocument.Parse(content);
+            var xDoc = XDocument.Parse(requestBody);
             var json = JsonConvert.SerializeXNode(xDoc);
 
             // Convert the XML converted JSON to an object tree of primitive types

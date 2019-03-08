@@ -46,13 +46,6 @@ namespace LiquidTransform.functionapp.v1
             var sr = new StreamReader(inputBlob);
             var liquidTransform = sr.ReadToEnd();
 
-            string requestBody = await req.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrEmpty(requestBody))
-            {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Please provide a request body");
-            }
-
             var contentReader = ContentFactory.GetContentReader(requestContentType);
             var contentWriter = ContentFactory.GetContentWriter(responseContentType);
 
@@ -60,7 +53,7 @@ namespace LiquidTransform.functionapp.v1
 
             try
             {
-                inputHash = contentReader.ParseRequest(requestBody);
+                inputHash = await contentReader.ParseRequestAsync(req.Content);
 
             }
             catch (Exception ex)

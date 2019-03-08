@@ -12,14 +12,25 @@ namespace LiquidTransform.functionapp.v1
         {
             switch (contentType)
             {
+                case "application/xml":
+                case "text/xml":
+                    return new XmlContentReader();
+                case "text/csv":
+                    return new CsvContentReader();
                 default:
-                    return new JsonContentReader(contentType);
+                    return new JsonContentReader();
             }
         }
 
-        public static IContentWriter GetContentWriter(string acceptHeader)
+        public static IContentWriter GetContentWriter(string contentType)
         {
-            return new BasicContentWriter();
+            switch (contentType)
+            {
+                case "application/json":
+                    return new JsonContentWriter(contentType);
+                default:
+                    return new BasicContentWriter(contentType);
+            }
         }
     }
 }

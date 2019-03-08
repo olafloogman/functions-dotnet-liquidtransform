@@ -7,12 +7,8 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using DotLiquid;
-using System.Collections.Generic;
-using System.Web.Script.Serialization;
 using System.Text;
-using Newtonsoft.Json;
 using System;
-using System.Xml.Linq;
 using LiquidTransform.Extensions;
 
 namespace LiquidTransform.functionapp.v1
@@ -43,8 +39,8 @@ namespace LiquidTransform.functionapp.v1
 
             // This indicates the response content type. If set to application/json it will perform additional formatting
             // Otherwise the Liquid transform is returned unprocessed.
-            string responseContentType = req.Headers.Accept.FirstOrDefault().MediaType;
             string requestContentType = req.Content.Headers.ContentType.MediaType;
+            string responseContentType = req.Headers.Accept.FirstOrDefault().MediaType;
 
             // Load the Liquid transform in a string
             var sr = new StreamReader(inputBlob);
@@ -57,14 +53,14 @@ namespace LiquidTransform.functionapp.v1
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Please provide a request body");
             }
 
-            //IContentReader contentReader = DependencyInjection.Resolve(typeof(IContentReader), requestContentType, context.FunctionName, context.InvocationId);
-            
+            var contentReader = ContentFactory.GetContentReader(requestContentType);
+            var contentWriter = ContentFactory.GetContentWriter(responseContentType);
 
             Hash inputHash;
 
             try
             {
-                inputHash = ParseRequest(requestBody, requestContentType);
+                inputHash = contentReader.ParseRequest(requestBody);
 
             }
             catch (Exception ex)
@@ -113,77 +109,25 @@ namespace LiquidTransform.functionapp.v1
                 }
             }
 
-            if (responseContentType == "application/json")
+            try
             {
-                // This will pretty print the JSON output, and also remove redundant comma characters after arrays as a result of for loop 
-                // constructs in Liquid, escape strings, and nullify empty numbers
-                try
+                var content = contentWriter.CreateResponse(output);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
-                    jsonSerializerSettings.NullValueHandling = NullValueHandling.Include;
-                    jsonSerializerSettings.StringEscapeHandling = StringEscapeHandling.Default;
+                    Content = content
+                };
+            }
+            catch (Exception ex)
+            {
+                // Just log the error, and return the Liquid output without parsing
+                log.Error(ex.Message, ex);
 
-                    var jsonObject = JsonConvert.DeserializeObject(output, jsonSerializerSettings);
-                    var jsonString = JsonConvert.SerializeObject(jsonObject, jsonSerializerSettings);
-
-                    return new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StringContent(jsonString, Encoding.UTF8, responseContentType)
-                    };
-                }
-                catch (Exception ex)
+                return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    // Just log the error, and return the Liquid output without JSON parsing
-                    log.Error(ex.Message, ex);
-                }
-
+                    Content = new StringContent(output, Encoding.UTF8, responseContentType)
+                };
             }
-
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(output, Encoding.UTF8, responseContentType)
-            };
-        }
-
-        private static Hash ParseRequest(string requestBody, string contentType)
-        {
-            Hash inputDictionary;
-            var transformInput = new Dictionary<string, object>();
-
-            if (contentType.EndsWith("json"))
-            {
-                // Convert the JSON input to an object tree of primitive types
-                var serializer = new JavaScriptSerializer();
-                // Let's not shy away from some big JSON files
-                serializer.MaxJsonLength = Int32.MaxValue;
-                dynamic requestJson = serializer.Deserialize(requestBody, typeof(object));
-
-                // Wrap the JSON input in another content node to provide compatibility with Logic Apps Liquid transformations
-                transformInput.Add("content", requestJson);
-
-                inputDictionary = Hash.FromDictionary(transformInput);
-            }
-            else if (contentType.EndsWith("xml"))
-            {
-                var xDoc = XDocument.Parse(requestBody);
-                var json = JsonConvert.SerializeXNode(xDoc);
-
-                // Convert the XML converted JSON to an object tree of primitive types
-                var serializer = new JavaScriptSerializer();
-                dynamic requestJson = serializer.Deserialize(json, typeof(object));
-
-                // Wrap the JSON input in another content node to provide compatibility with Logic Apps Liquid transformations
-                transformInput.Add("content", requestJson);
-
-                inputDictionary = Hash.FromDictionary(transformInput);
-            }
-            else
-            {
-                // Unsupported content type
-                throw new NotSupportedException($"Media type {contentType} not supported");
-            }
-
-            return inputDictionary;
         }
     }
 }

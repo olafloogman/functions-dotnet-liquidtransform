@@ -9,6 +9,6 @@ namespace LiquidTransform.functionapp.v1
 {
     public interface IContentWriter
     {
-        StringContent CreateResponse();
+        StringContent CreateResponse(string output);
     }
 }

@@ -10,7 +10,7 @@ namespace LiquidTransform.functionapp.v1
 {
     public class JsonContentReader : IContentReader
     {
-        public JsonContentReader(string contentType)
+        public JsonContentReader()
         {
 
         }

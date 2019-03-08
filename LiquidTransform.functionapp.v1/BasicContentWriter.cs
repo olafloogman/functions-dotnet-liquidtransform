@@ -9,9 +9,16 @@ namespace LiquidTransform.functionapp.v1
 {
     public class BasicContentWriter : IContentWriter
     {
-        public StringContent CreateResponse()
+        string _contentType;
+
+        public BasicContentWriter(string contentType)
         {
-            throw new NotImplementedException();
+            _contentType = contentType;
+        }
+
+        public StringContent CreateResponse(string output)
+        {
+            return new StringContent(output, Encoding.UTF8, _contentType);
         }
     }
 }

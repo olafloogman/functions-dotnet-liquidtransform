@@ -21,5 +21,10 @@ namespace LiquidTransform.Extensions
         {
             return string.IsNullOrEmpty(input) ? "null" : input;
         }
+
+        public static double Parsedouble(Context context, string input)
+        {
+            return Double.Parse(input);
+        }
     }
 }

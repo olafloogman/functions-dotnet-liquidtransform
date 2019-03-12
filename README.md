@@ -133,7 +133,7 @@ john doe;03/12/1975;56.8
 jane doe;17/03/1980;61.3
 ```
 With the following Liquid transformation:
-```JSON
+```
 [
 {%- for row in content -%}
 {%- if forloop.first == false -%}

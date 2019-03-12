@@ -1,12 +1,14 @@
 # functions-dotnet-liquidtransform
 
-An Azure Function (v1) executing Liquid transforms using DotLiquid. In summary the following transformation types are supported:
+An Azure Function (v1) executing Liquid transforms using DotLiquid. The following transformation types are supported:
 - JSON to JSON
 - JSON to XML
-- JSON to plain text
+- JSON to plain text / CSV
 - XML to JSON
 - XML to XML
-- XML to plain text
+- XML to plain text / CSV
+- CSV to JSON
+- CSV to XML
 
 The actual Liquid transforms should be stored in an Azure storage account. The Liquid transform uses the HTTP request body as input.
 
@@ -17,7 +19,6 @@ The actual Liquid transforms should be stored in an Azure storage account. The L
 - Azure subscription
 
 ### Usage
-
 Post a JSON or XML payload to the URL where your function app is hosted, e.g.:
 
 ```http
@@ -28,18 +29,23 @@ Accept: application/xml
 {
 	"name": "olaf"
 }
-
 ```
 
 Note how the name of the Liquid transform as stored in the storage account is part of the URL path. This allows for a function binding to the blob.
 
 The Liquid transformation should be stored in the Azure storage account associated with the Azure function (used for AzureWebJobsStorage) in a blob container named liquid-transforms.
 
-The transformation input type has to be specified with the HTTP Content-Type header. This can either be application/json or application/xml.
+#### Input type
+The transformation input type has to be specified with the HTTP **Content-Type** header. This can either be application/json or application/xml.
 
-The transformation output type has to be specified with the HTTP Accept header. Examples could be application/json, application/XML or text/CSV.
+#### Output type
+The transformation output type has to be specified with the HTTP **Accept** header. Examples could be application/json, application/XML or text/CSV.
 
+### Examples
 #### JSON transformation
+JSON can be transformed to any output type. Use the Conent-Type application/json to specify the JSON input type. JSON is the default input type, so if no Content-Type is specified it automatically attempts to parse JSON.
+
+##### JSON to JSON
 Let's take the following JSON input:
 ```json
 {
@@ -59,6 +65,7 @@ This will produce a JSON payload with the following output:
 }
 ```
 
+##### JSON to XML
 And with the following Liquid transform:
 ```xml
 <fullName>{{content.name}}</fullName>
@@ -70,6 +77,9 @@ This will result in the the following XML output:
 ```
 
 #### XML transformation
+XML can be transformed to any output type. Use the Content-Type application/xml or text/xml to specify the XML input type.
+
+##### XML to JSON
 Let's take the following XML input:
 
 ```xml
@@ -110,6 +120,46 @@ This will result in the following JSON output:
     ],
     "test": "test"
 }
+```
+
+#### CSV transformation
+Basic support for CSV file ingestion is supported. There's currently no 'smarts' around headers and datatypes, but with the use of Liquid constructs and custom filters there's no real limitations.
+
+##### CSV to JSON
+Let's take the following CSV input:
+```csv
+name;dob;score
+john doe;03/12/1975;56.8
+jane doe;17/03/1980;61.3
+```
+With the following Liquid transformation:
+```JSON
+[
+{%- for row in content -%}
+{%- if forloop.first == false -%}
+{
+    "name": "{{ row[0] }}",
+    "dob": "{{ row[1] | date: 'yyy-MM-dd' }}",
+    "score": "{{ row[2] | parsedouble | times: 2 }}"
+},
+{%- endif -%}
+{%- endfor %}
+]
+```
+This will result in the following JSON output:
+```
+[
+    {
+        "name": "john doe",
+        "dob": "1975-12-03",
+        "score": "113.6"
+    },
+    {
+        "name": "jane doe",
+        "dob": "1980-03-17",
+        "score": "122.6"
+    }
+]
 ```
 
 ## Deployment

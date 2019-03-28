@@ -34,7 +34,26 @@ namespace LiquidTransform.functionapp.v1
             // Wrap the JSON input in another content node to provide compatibility with Logic Apps Liquid transformations
             transformInput.Add("content", requestJson);
 
-            return Hash.FromDictionary(transformInput);
+            return this.FromDictionary(transformInput);
+        }
+
+        private Hash FromDictionary(IDictionary<string, object> dictionary)
+        {
+            Hash result = new Hash();
+
+            foreach (var keyValue in dictionary)
+            {
+                if (keyValue.Value is IDictionary<string, object>)
+                {
+                    result.Add(keyValue.Key.Replace("@","attr-"), FromDictionary((IDictionary<string, object>)keyValue.Value));
+                }
+                else
+                {
+                    result.Add(keyValue.Key.Replace("@", "attr-"), keyValue.Value);
+                }
+            }
+
+            return result;
         }
     }
 }

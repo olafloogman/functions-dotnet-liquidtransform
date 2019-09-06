@@ -1,4 +1,5 @@
 ﻿using DotLiquid;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,6 +26,26 @@ namespace LiquidTransform.Extensions
         public static double Parsedouble(Context context, string input)
         {
             return Double.Parse(input);
+        }
+
+        private static JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+        {
+            StringEscapeHandling = StringEscapeHandling.Default
+        };
+
+        private static JsonSerializerSettings jsonNoHtmlSettings = new JsonSerializerSettings
+        {
+            StringEscapeHandling = StringEscapeHandling.EscapeHtml
+        };
+
+        public static string Json(Context context, dynamic input)
+        {
+            return JsonConvert.SerializeObject(input, jsonSettings);
+        }
+
+        public static string Json_nohtml(Context context, dynamic input)
+        {
+            return JsonConvert.SerializeObject(input, jsonNoHtmlSettings);
         }
     }
 }

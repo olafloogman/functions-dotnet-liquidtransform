@@ -1,6 +1,6 @@
 # functions-dotnet-liquidtransform
 
-An Azure Function (v1) executing Liquid transforms using DotLiquid. The following transformation types are supported:
+An Azure Function (v1 & v2) executing Liquid transforms using DotLiquid. The following transformation types are supported:
 - JSON to JSON
 - JSON to XML
 - JSON to plain text / CSV

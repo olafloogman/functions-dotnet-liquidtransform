@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LiquidTransform.Extensions
+namespace DotLiquid.Extensible.AzFunc.v4
 {
     public static class CustomFilters
     {
@@ -25,7 +25,7 @@ namespace LiquidTransform.Extensions
 
         public static double Parsedouble(Context context, string input)
         {
-            return Double.Parse(input);
+            return double.Parse(input);
         }
 
         private static JsonSerializerSettings jsonSettings = new JsonSerializerSettings

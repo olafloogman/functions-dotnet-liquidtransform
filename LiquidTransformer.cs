@@ -3,43 +3,41 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using DotLiquid;
 using System.Text;
 using System;
 using Microsoft.Extensions.Logging;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
-namespace LiquidTransform.functionapp.v2
+namespace DotLiquid.Extensible.AzFunc.v4
 {
-    public static class LiquidTransformer
+    public class LiquidTransformer
     {
-        /// <summary>
-        /// Converts Json to XML using a Liquid mapping. The filename of the liquid map needs to be provided in the path. 
-        /// The tranformation is executed with the HTTP request body as input.
-        /// </summary>
-        /// <param name="req"></param>
-        /// <param name="inputBlob"></param>
-        /// <param name="log"></param>
-        /// <returns></returns>
-        [FunctionName("LiquidTransformer")]
-        public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "liquidtransformer/{liquidtransformfilename}")] HttpRequestMessage req,
-            [Blob("liquid-transforms/{liquidtransformfilename}", FileAccess.Read)] Stream inputBlob,
-            ILogger log)
+        private readonly ILogger<LiquidTransformer> _logger;
+
+        public LiquidTransformer(ILogger<LiquidTransformer> logger)
+        {
+            _logger = logger;
+        }
+
+        [Function("LiquidTransformer")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "post", Route = "liquidtransformer/{liquidtransformfilename}")] HttpRequest req,
+            [BlobInput("liquid-transforms/{liquidtransformfilename}")] Stream inputBlob, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
             if (inputBlob == null)
             {
                 log.LogError("inputBlog null");
-                return req.CreateErrorResponse(HttpStatusCode.NotFound, "Liquid transform not found");
+                return new NotFoundObjectResult("Liquid transform not found");
             }
 
             // This indicates the response content type. If set to application/json it will perform additional formatting
             // Otherwise the Liquid transform is returned unprocessed.
-            string requestContentType = req.Content.Headers.ContentType.MediaType;
-            string responseContentType = req.Headers.Accept.FirstOrDefault().MediaType;
+            string requestContentType = req.Headers.ContentType.FirstOrDefault() ?? "application/json";
+            string responseContentType = req.Headers.Accept.FirstOrDefault() ?? "application/json";
 
             // Load the Liquid transform in a string
             var sr = new StreamReader(inputBlob);
@@ -52,13 +50,13 @@ namespace LiquidTransform.functionapp.v2
 
             try
             {
-                inputHash = await contentReader.ParseRequestAsync(req.Content);
+                inputHash = await contentReader.ParseRequestAsync(req.Body);
 
             }
             catch (Exception ex)
             {
                 log.LogError(ex.Message, ex);
-                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error parsing request body", ex);
+                return new BadRequestObjectResult("Error parsing request body");
             }
 
             // Register the Liquid custom filter extensions
@@ -74,7 +72,8 @@ namespace LiquidTransform.functionapp.v2
             catch (Exception ex)
             {
                 log.LogError(ex.Message, ex);
-                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error parsing Liquid template", ex);
+
+                return new BadRequestObjectResult("Error parsing Liquid template");
             }
 
             string output = string.Empty;
@@ -86,18 +85,18 @@ namespace LiquidTransform.functionapp.v2
             catch (Exception ex)
             {
                 log.LogError(ex.Message, ex);
-                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error rendering Liquid template", ex);
+                return new BadRequestObjectResult("Error rendering Liquid template");
             }
 
             if (template.Errors != null && template.Errors.Count > 0)
             {
                 if (template.Errors[0].InnerException != null)
                 {
-                    return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Error rendering Liquid template: {template.Errors[0].Message}", template.Errors[0].InnerException);
+                    return new BadRequestObjectResult($"Error rendering Liquid template: {template.Errors[0].Message} {template.Errors[0].InnerException!.Message}");
                 }
                 else
                 {
-                    return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Error rendering Liquid template: {template.Errors[0].Message}");
+                    return new BadRequestObjectResult($"Error rendering Liquid template: {template.Errors[0].Message}");
                 }
             }
 
@@ -105,20 +104,14 @@ namespace LiquidTransform.functionapp.v2
             {
                 var content = contentWriter.CreateResponse(output);
 
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = content
-                };
+                return new OkObjectResult(content);
             }
             catch (Exception ex)
             {
                 // Just log the error, and return the Liquid output without parsing
                 log.LogError(ex.Message, ex);
 
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(output, Encoding.UTF8, responseContentType)
-                };
+                return new OkObjectResult(new StringContent(output, Encoding.UTF8, responseContentType));
             }
         }
     }

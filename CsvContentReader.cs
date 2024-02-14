@@ -8,20 +8,17 @@ using System.Text;
 using System.Threading.Tasks;
 using DotLiquid;
 
-namespace LiquidTransform.functionapp.v2
+namespace DotLiquid.Extensible.AzFunc.v4
 {
     public class CsvContentReader : IContentReader
     {
-        public async Task<Hash> ParseRequestAsync(HttpContent content)
+        public async Task<Hash> ParseRequestAsync(Stream content)
         {
-            var stream = await content.ReadAsStreamAsync();
-
             var transformInput = new Dictionary<string, object>();
-
 
             List<object[]> csv = new List<object[]>();
 
-            StreamReader sr = new StreamReader(stream);
+            StreamReader sr = new StreamReader(content);
             while (!sr.EndOfStream)
             {
                 var line = await sr.ReadLineAsync();

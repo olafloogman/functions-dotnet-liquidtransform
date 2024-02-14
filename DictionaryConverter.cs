@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LiquidTransform.functionapp.v2
+namespace DotLiquid.Extensible.AzFunc.v4
 {
     public class DictionaryConverter : JsonConverter
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) { this.WriteValue(writer, value); }
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) { WriteValue(writer, value); }
 
         private void WriteValue(JsonWriter writer, object value)
         {
@@ -16,10 +16,10 @@ namespace LiquidTransform.functionapp.v2
             switch (t.Type)
             {
                 case JTokenType.Object:
-                    this.WriteObject(writer, value);
+                    WriteObject(writer, value);
                     break;
                 case JTokenType.Array:
-                    this.WriteArray(writer, value);
+                    WriteArray(writer, value);
                     break;
                 default:
                     writer.WriteValue(value);
@@ -34,7 +34,7 @@ namespace LiquidTransform.functionapp.v2
             foreach (var kvp in obj)
             {
                 writer.WritePropertyName(kvp.Key);
-                this.WriteValue(writer, kvp.Value);
+                WriteValue(writer, kvp.Value);
             }
             writer.WriteEndObject();
         }
@@ -45,7 +45,7 @@ namespace LiquidTransform.functionapp.v2
             var array = value as IEnumerable<object>;
             foreach (var o in array)
             {
-                this.WriteValue(writer, o);
+                WriteValue(writer, o);
             }
             writer.WriteEndArray();
         }
@@ -67,7 +67,7 @@ namespace LiquidTransform.functionapp.v2
                 case JsonToken.StartObject:
                     return ReadObject(reader);
                 case JsonToken.StartArray:
-                    return this.ReadArray(reader);
+                    return ReadArray(reader);
                 case JsonToken.Integer:
                 case JsonToken.Float:
                 case JsonToken.String:

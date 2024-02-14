@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LiquidTransform.functionapp.v2
+namespace DotLiquid.Extensible.AzFunc.v4
 {
     public class JsonContentWriter : IContentWriter
     {

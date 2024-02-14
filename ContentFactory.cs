@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace LiquidTransform.functionapp.v2
+﻿namespace DotLiquid.Extensible.AzFunc.v4
 {
     public static class ContentFactory
     {
